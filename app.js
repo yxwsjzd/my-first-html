@@ -1,11 +1,87 @@
-// ========== 数据：使用对象和数组 ==========
-// 打卡数据对象
+// ========== 烟花系统 ==========
+const canvas = document.getElementById('fireworksCanvas');
+const ctx = canvas.getContext('2d');
+
+// 设置画布实际尺寸与显示一致
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// 烟花粒子类
+class Particle {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 5 + 2;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.alpha = 1;
+        this.decay = Math.random() * 0.02 + 0.015;
+        this.size = Math.random() * 3 + 2;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.05; // 轻微重力
+        this.alpha -= this.decay;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+// 存储所有活跃的粒子
+let particles = [];
+
+// 创建一场烟花（在指定位置）
+function createFirework(x, y) {
+    const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#FF8C42', '#A29BFE', '#FD79A8', '#FDCB6E', '#00CEC9'];
+    const particleCount = 80;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle(x, y, color));
+    }
+}
+
+// 动画循环：每帧更新并重绘画布
+function animate() {
+    // 使用半透明背景制造拖尾效果
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 更新并绘制所有粒子
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.update();
+        p.draw(ctx);
+        if (p.alpha <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+    requestAnimationFrame(animate);
+}
+
+animate();
+
+// ========== 打卡逻辑（原有部分） ==========
 const punchData = {
-    total: 0,           // 累计打卡天数
-    dates: []           // 打卡日期数组
+    total: 0,
+    dates: []
 };
 
-// 徽章数组，每个元素是一个对象
 const badges = [
     { name: '青铜', icon: '🥉', needDays: 1, unlocked: false },
     { name: '白银', icon: '🥈', needDays: 7, unlocked: false },
@@ -13,9 +89,6 @@ const badges = [
     { name: '钻石', icon: '💎', needDays: 100, unlocked: false }
 ];
 
-// ========== 函数：封装逻辑 ==========
-
-// 获取今天的日期字符串 (YYYY-MM-DD)
 function getTodayStr() {
     const now = new Date();
     const year = now.getFullYear();
@@ -24,75 +97,57 @@ function getTodayStr() {
     return `${year}-${month}-${day}`;
 }
 
-// 更新页面上的天数显示（DOM操作）
 function updateTotalDaysDisplay() {
-    const span = document.getElementById('totalDays');
-    span.textContent = punchData.total;
+    document.getElementById('totalDays').textContent = punchData.total;
 }
 
-// 根据天数更新徽章的解锁状态（条件判断、循环）
 function checkBadges() {
     for (let i = 0; i < badges.length; i++) {
-        // 条件：累计天数 >= 徽章要求天数
         badges[i].unlocked = punchData.total >= badges[i].needDays;
     }
 }
 
-// 渲染徽章列表到页面（循环生成HTML，DOM操作）
 function renderBadges() {
     const badgeListDiv = document.getElementById('badgeList');
-    // 先清空容器
     badgeListDiv.innerHTML = '';
-
-    // 遍历徽章数组
     for (let i = 0; i < badges.length; i++) {
         const badge = badges[i];
-        
-        // 创建一个div元素
         const div = document.createElement('div');
-        
-        // 根据解锁状态添加不同的CSS类（三元运算符）
         const statusClass = badge.unlocked ? 'badge-unlocked' : 'badge-locked';
         div.className = `badge-item ${statusClass}`;
-        
-        // 设置div内部的文字（模板字符串）
         div.textContent = `${badge.icon} ${badge.name} (${badge.needDays}天)`;
-        
-        // 将div添加到徽章列表容器中
         badgeListDiv.appendChild(div);
     }
 }
 
-// 打卡核心函数（点击事件处理）
 function doPunch() {
     const today = getTodayStr();
-    
-    // 检查今天是否已经打过卡（indexOf 查找）
     if (punchData.dates.indexOf(today) !== -1) {
         alert('今天已经打过卡啦！');
-        return; // 提前结束函数
+        return;
     }
-    
-    // 更新数据
+
+    // 成功打卡
     punchData.total++;
-    punchData.dates.push(today); // push添加
-    
-    // 重新检查徽章状态
+    punchData.dates.push(today);
     checkBadges();
-    
-    // 更新UI
     updateTotalDaysDisplay();
     renderBadges();
+
+    // 触发烟花！在按钮位置或随机位置绽放
+    const btn = document.getElementById('punchBtn');
+    const rect = btn.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    // 同时放3组烟花，增加视觉冲击
+    createFirework(x, y);
+    createFirework(x - 30, y - 20);
+    createFirework(x + 30, y - 20);
 }
 
-// ========== 初始化：关联HTML元素与事件 ==========
-// 等网页加载完成后执行
 window.onload = function() {
-    // 获取打卡按钮，绑定点击事件（事件监听，类似bindtap）
     const btn = document.getElementById('punchBtn');
     btn.addEventListener('click', doPunch);
-    
-    // 初始渲染
     checkBadges();
     updateTotalDaysDisplay();
     renderBadges();

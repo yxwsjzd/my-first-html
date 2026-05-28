@@ -3,23 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>打卡成就</title>
-    <!-- 关联外部CSS文件 -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- 烟花画布：覆盖整个窗口 -->
+    <canvas id="fireworksCanvas"></canvas>
+
     <div class="container">
         <h1>📅 我的打卡</h1>
         <p>累计打卡 <span id="totalDays">0</span> 天</p>
         
-        <!-- 打卡按钮 -->
         <button id="punchBtn">今日打卡</button>
         
         <h2>🏆 成就徽章</h2>
-        <!-- 徽章列表会由JS动态生成到这里 -->
         <div id="badgeList"></div>
     </div>
 
-    <!-- 关联外部JS文件，放在body末尾 -->
     <script src="app.js"></script>
 </body>
 </html>
